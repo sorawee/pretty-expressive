@@ -524,9 +524,11 @@ the @deftech{cost factory} interface.
          cost-factory?]{
   The default cost factory that is employed for @racket[pretty-print].
   A cost satisfies the contract @racket[(list/c natural? natural?)].
-  For a cost @racket[(list b h)], @racket[b] is the @deftech{badness}, which is the sum of squared overflows,
+  For a cost @racket[(list b h)], @racket[b] is the @deftech{badness},
+  which is the sum of squared overflows over the page width limit @racket[page-width],
   and @racket[h] is the number of newlines.
   The optimality objective is to minimize the badness, and then minimize the number of newlines.
+  If @racket[computation-width] has the @racket[#f] value, its effective value is @math{1.2 × @racket[page-width]}.
 
   Internally, this cost factory is implemented as:
 
