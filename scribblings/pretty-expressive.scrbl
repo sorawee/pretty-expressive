@@ -27,7 +27,7 @@
 
 This library implements a pretty expressive printer, following the algorithm presented in @citet[Porncharoenwase23:pretty-expressive].
 The pretty printer is very expressive, provably optimal, and practically efficient.
-It is similar to another library @racketmodlink[pprint]{PPrint}, but that library employs a greedy algorithm.
+It is similar to another library @racketmodname[pprint #:indirect], but that library employs a greedy algorithm.
 As a result, @racketmodname[pretty-expressive], when compared to PPrint, is more expressive and optimal, at the cost of being less efficient.
 
 This documentation and its structure are shamelessly copied/adapted from the PPrint library.
