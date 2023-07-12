@@ -465,6 +465,7 @@ the @deftech{cost factory} interface.
     @item{@racket[(cost+ a b)] combines costs @racket[a] and @racket[b] together to produce a new cost.}
     @item{@racket[(cost-text c len)] produces a cost due to a text placement at column position @racket[c] when the text has length @racket[len].}
     @item{@racket[(cost-nl i)] produces a cost due to a newline along with @racket[i] indentation spaces.}
+    @item{@racket[limit] is the actual value for computation width limit.}
   ]
 
   These functions should at minimum satisfy the following properties:
