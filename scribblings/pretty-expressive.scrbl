@@ -316,11 +316,6 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
   Concatenates @tech{doc}s in @racket[xs] together using @racket[<+s>].
 }
 
-@defproc[(sep [xs doc?]) doc?]{
-  Concatenates @tech{doc}s in @racket[xs] either (1) vertically or (2)
-  horizontally with successive pairs separated by @racket[space].
-}
-
 @defproc[(align [d doc?]) doc?]{
   Aligns the @tech{doc} @racket[d].
   @racket[(<+> a b)] is equivalent to @racket[(<> a (align b))].
@@ -328,20 +323,51 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
 
 @defproc[(nest [n natural?] [d doc?]) doc?]{
   Increments the indentation level by @racket[n] when rendering the @tech{doc} @racket[d].
+
+
+  @examples[#:eval evaluator
+    (pretty-print (<> (text "when 1 = 2:")
+                      (nest 4 (<> nl (text "print 'oh no!'")))))
+  ]
+
+  The increment does not affect content on the current line.
+
+  @examples[#:eval evaluator
+    (code:comment @#,elem{"when 1 = 2:" is not further indented})
+    (pretty-print (nest 4 (<> (text "when 1 = 2:")
+                              nl
+                              (text "print 'oh no!'"))))
+  ]
 }
 
 @defthing[fail doc?]{
   Constructs a @tech{doc} that fails to render.
-  This doc interacts with @racket[alt]: only non-failing branches are considered for rendering.
+  This doc interacts with @racket[alt]: failing branches are pruned away.
+
+  @examples[#:eval evaluator
+    (eval:error (pretty-print (<> (text "a") fail)))
+    (pretty-print (alt (<> (text "a") fail) (text "b")))
+  ]
 }
 
 @defproc[(flat [x doc?]) doc?]{
   Constrains @tech{doc} @racket[x] to fit in one line.
-  If @racket[x] can't fit in one line, it fails to render.
+  If @racket[x] can't fit in one line, it @racket[fail]s to render.
+
+  @examples[#:eval evaluator
+    (eval:error (pretty-print (flat (<$> (text "a") (text "b")))))
+    (pretty-print (<$> (flat (text "a")) (text "b")))
+  ]
 }
 
 @defproc[(flatten [x doc?]) doc?]{
   Flattens @tech{doc} @racket[x] so that all newlines are replaced with spaces.
+
+  @examples[#:eval evaluator
+    (define doc (<$> (text "a") (text "b") (text "c")))
+    (pretty-print doc)
+    (pretty-print (flatten doc))
+  ]
 }
 
 @defproc[(group [x doc?]) doc?]{
@@ -350,6 +376,7 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
 
 @defproc[(cost [n any/c] [x doc?]) doc?]{
   Adds a cost @racket[n] to @racket[x].
+  See @secref{Cost_factory} for more details.
 }
 
 @subsection{Useful Constants}
