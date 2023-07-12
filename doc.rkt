@@ -37,8 +37,8 @@
            make-text))
 
 (require racket/match
-         syntax/parse/define
-         (for-syntax racket/base))
+         (for-syntax racket/base
+                     syntax/parse/pre))
 
 ;; We only memoize every memo-weight-limit node.
 ;; The value of memo-weight-limit must be a positive integer (initialized below)
@@ -91,37 +91,42 @@
     [(zero? val) memo-weight-init]
     [else (sub1 val)]))
 
-(define-syntax-parser get-weight
-  [(_ d) #'(calc-weight d)]
-  [(_ a b) #'(min (calc-weight a) (calc-weight b))])
+(define-syntax (get-weight stx)
+  (syntax-parse stx
+    [(_ d) #'(calc-weight d)]
+    [(_ a b) #'(min (calc-weight a) (calc-weight b))]))
 
 ;; inst-internal-doc creates an internal doc with a constructor ctor.
 ;; It automatically decides whether memo tables should be allocated based on
 ;; the memo weight, and initializes the failure flags with #f if
 ;; #:fail is not given
-(define-syntax-parse-rule (inst-internal-doc ctor #:doc [doc ...]
-                                             fail:fail-flag #:args arg ...)
-  (let ([weight (get-weight doc ...)])
-    (cond
-      [(zero? weight)
-       (ctor weight
-             (make-hasheq) (make-hasheq) (make-hasheq) (make-hasheq)
-             fail.value ...
-             arg ...)]
-      [else
-       (ctor weight
-             #f #f #f #f
-             fail.value ...
-             arg ...)])))
+(define-syntax (inst-internal-doc stx)
+  (syntax-parse stx
+    [(_ ctor #:doc [doc ...]
+        fail:fail-flag #:args arg ...)
+     #'(let ([weight (get-weight doc ...)])
+         (cond
+           [(zero? weight)
+            (ctor weight
+                  (make-hasheq) (make-hasheq) (make-hasheq) (make-hasheq)
+                  fail.value ...
+                  arg ...)]
+           [else
+            (ctor weight
+                  #f #f #f #f
+                  fail.value ...
+                  arg ...)]))]))
 
 ;; inst-leaf-doc creates a leaf doc with a constructor ctor.
 ;; It automatically blanks the memo table fields, initializes the memo weight
 ;; and initializes the failure flags with #f if #:fail is not given
-(define-syntax-parse-rule (inst-leaf-doc ctor fail:fail-flag #:args arg ...)
-  (ctor memo-weight-init
-        #f #f #f #f
-        fail.value ...
-        arg ...))
+(define-syntax (inst-leaf-doc stx)
+  (syntax-parse stx
+    [(_ ctor fail:fail-flag #:args arg ...)
+     #'(ctor memo-weight-init
+             #f #f #f #f
+             fail.value ...
+             arg ...)]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -243,13 +248,14 @@
 ;; perform partial evaluation on the "constructor"s
 
 ;; For production code, use #:prod clause. For debugging code, use #:dbg clause.
-(define-syntax-parse-rule (cond-dbg
-                           [#:dbg e ...+]
-                           [#:prod e2 ...+])
-  #:with out (if current-debug?
-                 #'(let () e ...)
-                 #'(let () e2 ...))
-  out)
+(define-syntax (cond-dbg stx)
+  (syntax-parse stx
+    [(_ [#:dbg e ...+]
+        [#:prod e2 ...+])
+     #:with out (if current-debug?
+                    #'(let () e ...)
+                    #'(let () e2 ...))
+     #'out]))
 
 (cond-dbg
  [#:dbg
