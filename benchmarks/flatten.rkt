@@ -13,4 +13,4 @@
     [else (group (<> (quadratic (sub1 n)) nl (text "line")))]))
 
 (define doc (quadratic (current-size)))
-(do-bench (pretty-format doc))
+(do-bench doc)

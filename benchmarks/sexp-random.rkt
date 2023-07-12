@@ -23,4 +23,4 @@
                 (format "random-tree-~a.sexp" (current-size))))))
 
 (define doc (pp json))
-(do-bench (pretty-format doc))
+(do-bench doc)

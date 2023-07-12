@@ -13,4 +13,4 @@
     [else (<> (pp (sub1 n)) (text "line"))]))
 
 (define doc (pp (current-size)))
-(do-bench (pretty-format doc))
+(do-bench doc)

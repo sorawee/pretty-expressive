@@ -51,9 +51,10 @@
     "Memoization limit (default: 7)"
     (set-memo-limit! (string->number memo-limit))]))
 
-;; do-bench :: (-> string?) -> void?
-(define (do-bench* f)
-  (match-define-values [(list out) _ duration _] (time-apply f '()))
+;; do-bench :: doc? -> void?
+(define (do-bench d)
+  (match-define-values [(list (info out tainted? _)) _ duration _]
+    (time-apply (λ () (pretty-format/factory/info d (default-cost-factory))) '()))
   (match (current-out)
     [#f (void)]
     ["-" (displayln out)]
@@ -69,7 +70,5 @@
      [md5 ,(string->symbol (~a (md5 out)))]
      [page-width ,(current-page-width)]
      [computation-width ,(current-computation-width)]
+     [tainted? ,tainted?]
      [memo-limit ,(get-memo-limit)])))
-
-(define-syntax-rule (do-bench body ...)
-  (do-bench* (λ () body ...)))

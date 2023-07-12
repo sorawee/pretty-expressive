@@ -208,6 +208,21 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
   Like @racket[pretty-print/factory], but outputs a string instead.
 }
 
+@defproc[(pretty-format/factory/info [d doc?]
+                                     [F cost-factory?]
+                                     [#:offset offset natural? (current-offset)])
+         info?]{
+  Like @racket[pretty-print/factory], but outputs an @racket[info] structure
+  which contains debugging information.
+}
+
+@defstruct[info ([out string?]
+                 [tainted? boolean?]
+                 [cost any/c])]{
+  A structure type that contains both the output of pretty printing and debugging information:
+  taintedness and cost of the output layout.
+}
+
 @subsection{Constructing Documents}
 
 @defproc[(text [s string?]) doc?]{
@@ -482,7 +497,9 @@ the @deftech{cost factory} interface.
   Internally, this cost factory is implemented as:
 
   @racketblock[
-    (define (default-cost-factory page-width computation-width)
+    (define (default-cost-factory
+             #:page-width [page-width (current-page-width)]
+             #:computation-width [computation-width (current-computation-width)])
       (cost-factory
        (match-lambda**
         [((list b1 h1) (list b2 h2))
@@ -533,7 +550,9 @@ In this case, we would prefer the output:
 To address this issue, we construct a new cost factory.
 
   @examples[#:label #f #:eval evaluator
-    (define (my-cost-factory page-width computation-width)
+    (define (my-cost-factory
+             #:page-width [page-width (current-page-width)]
+             #:computation-width [computation-width (current-computation-width)])
       (cost-factory
        (match-lambda**
         [((list b1 h1 sc1) (list b2 h2 sc2))
@@ -586,15 +605,14 @@ It penalizes the vertical style by adding a @tech{style cost} to that choice.
 Now we can pretty print as we desired:
 
 @examples[#:eval evaluator #:label #f
-  (code:comment "Use the width limit of 15")
   (pretty-print/factory (new-pretty '("abc" "def" ("ghi" "jkl" "mno")))
-                        (my-cost-factory 15 #f))
+                        (my-cost-factory #:page-width 15))
 
   (code:comment "Three styles are still possible")
   (define new-abcd-doc (new-pretty '("a" "b" "c" "d")))
-  (pretty-print/factory new-abcd-doc (my-cost-factory 10 #f))
-  (pretty-print/factory new-abcd-doc (my-cost-factory 6 #f))
-  (pretty-print/factory new-abcd-doc (my-cost-factory 4 #f))
+  (pretty-print/factory new-abcd-doc (my-cost-factory #:page-width 10))
+  (pretty-print/factory new-abcd-doc (my-cost-factory #:page-width 6))
+  (pretty-print/factory new-abcd-doc (my-cost-factory #:page-width 4))
 ]
 
 @section{Processing Documents}
@@ -610,14 +628,5 @@ Now we can pretty print as we desired:
   making programs that directly matches against all expanders brittle to changes.
   Using this function on the other hand makes doc processing stable across versions.
 }
-
-@section{Debugging}
-
-The pretty printer employs the @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{logger} facility in Racket under the topic @litchar{pretty-expressive}
-to make debugging easy. Run a program with:
-
-@exec{PLTSTDERR="debug@"@"pretty-expressive"}
-
-to show the debugging information (cost of the optimal layout, whether the optimal layout is tainted, etc.).
 
 @(generate-bibliography)

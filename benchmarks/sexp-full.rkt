@@ -24,4 +24,4 @@
 
 (define-values (t _) (test-expr (current-size) 0))
 (define doc (pp t))
-(do-bench (pretty-format doc))
+(do-bench doc)

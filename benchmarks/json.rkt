@@ -50,4 +50,4 @@
     [#t (text "true")]))
 
 (define doc (pp json))
-(do-bench (pretty-format doc))
+(do-bench doc)

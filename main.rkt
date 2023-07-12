@@ -7,8 +7,11 @@
          "core.rkt"
          "addons.rkt")
 
-(provide pretty-print/factory
+(provide pretty-format/factory/info
+
+         pretty-print/factory
          pretty-format/factory
+
          pretty-format
          pretty-print
 
@@ -28,10 +31,13 @@
 (define current-computation-width (make-parameter #f))
 (define current-offset (make-parameter 0))
 
-(define (pretty-format/factory d F #:offset [offset (current-offset)])
+(define (pretty-format/factory/info d F #:offset [offset (current-offset)])
   (print-layout #:doc d
                 #:factory F
                 #:offset offset))
+
+(define (pretty-format/factory d F #:offset [offset (current-offset)])
+  (info-out (pretty-format/factory/info d F #:offset offset)))
 
 (define (pretty-print/factory d F
                               #:offset [offset (current-offset)]
@@ -39,7 +45,9 @@
   (display (pretty-format/factory d F #:offset offset)
            out))
 
-(define (default-cost-factory page-width computation-width)
+(define (default-cost-factory
+         #:page-width [page-width (current-page-width)]
+         #:computation-width [computation-width (current-computation-width)])
   (cost-factory
    (match-lambda**
     [((list b1 h1) (list b2 h2))
@@ -67,7 +75,9 @@
          #:computation-width [computation-width (current-computation-width)]
          #:offset [offset (current-offset)])
   (pretty-format/factory d
-                         (default-cost-factory page-width computation-width)
+                         (default-cost-factory
+                          #:page-width page-width
+                          #:computation-width computation-width)
                          #:offset offset))
 
 (define (pretty-print d

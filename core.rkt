@@ -4,9 +4,8 @@
 
 (#%declare #:unsafe)
 
-(define-logger pretty-expressive)
-
 (provide print-layout
+         (struct-out info)
          (struct-out cost-factory)
          (all-from-out "doc.rkt"))
 
@@ -17,6 +16,8 @@
          "process.rkt"
          "promise.rkt"
          (submod "doc.rkt" private))
+
+(struct info (out tainted? cost) #:transparent)
 
 (struct cost-factory (cost<=? cost+ cost-text cost-nl limit))
 
@@ -46,7 +47,7 @@
 ;; the latter is currently inefficient, so we will build a list of tokens
 ;; explicitly for now.
 
-;; print :: doc -> cost-factory? -> measure?
+;; print :: doc -> cost-factory? -> (values measure? boolean?)
 (define (print d F #:offset offset)
   (match-define (cost-factory cost<=? cost+ cost-text cost-nl limit) F)
 
@@ -257,8 +258,7 @@
   (define result
     (merge (resolve d offset offset #f #f) (resolve d offset offset #f #t)))
 
-  (when (promise? result)
-    (log-pretty-expressive-debug "tainted"))
+  (define tainted? (promise? result))
 
   ;; NOTE: unlike OCaml, the doc d can be printed with other cost factories
   ;; so we need to reset the memoization table.
@@ -278,13 +278,14 @@
            (cleanup d))
     ['() (raise (exn:fail:user "the document fails to print"
                                (current-continuation-marks)))]
-    [(list m)
-     (log-pretty-expressive-debug "cost: ~a" (measure-cost m))
-     m]))
+    [(list m) (values m tainted?)]))
 
-;; print-layout :: #:doc doc? -> #:factory cost-factory? -> string?
+;; print-layout :: #:doc doc? -> #:factory cost-factory? -> info?
 (define (print-layout #:doc d #:factory F #:offset offset)
-  (string-append* ((measure-tok (print d F #:offset offset)) '())))
+  (define-values (m tainted?) (print d F #:offset offset))
+  (info (string-append* ((measure-tok m) '()))
+        tainted?
+        (measure-cost m)))
 
 ;; Lemma 1: the failure of resolving is independent of c and i.
 ;;          I.e., given d, c1, c2, i1, i2, beg-full?, and end-full?:

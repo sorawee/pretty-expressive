@@ -23,4 +23,4 @@
 
 (define lines (file->lines "/usr/share/dict/words"))
 (define doc (fill-sep (take lines (current-size))))
-(do-bench (pretty-format doc))
+(do-bench doc)
