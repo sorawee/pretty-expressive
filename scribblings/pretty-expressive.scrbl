@@ -344,6 +344,10 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
   Flattens @tech{doc} @racket[x] so that all newlines are replaced with spaces.
 }
 
+@defproc[(group [x doc?]) doc?]{
+  Creates two choices: @racket[(flatten x)] and @racket[x].
+}
+
 @defproc[(cost [n any/c] [x doc?]) doc?]{
   Adds a cost @racket[n] to @racket[x].
 }
