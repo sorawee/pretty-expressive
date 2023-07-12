@@ -30,11 +30,11 @@
          define+provide-family)
 
 (require racket/match
-         syntax/parse/define
          "core.rkt"
          "process.rkt"
          (for-syntax racket/base
-                     racket/syntax))
+                     racket/syntax
+                     syntax/parse/pre))
 
 (define empty-doc (text ""))
 
@@ -57,20 +57,22 @@
     [(cons x xs) (for/fold ([current x]) ([x (in-list xs)])
                    (f current x))]))
 
-(define-syntax-parse-rule (define+provide-family name:id bin-op:expr)
-  #:with name-concat (format-id this-syntax "~a-concat" #'name)
-  #:with name-append (format-id this-syntax "~a-append" #'name)
-  (begin
-    (provide name-concat
-             name-append)
-    (define (name-concat xs)
-      (fold-doc bin-op xs))
-    (define name-append
-      (case-lambda
-        [() empty-doc]
-        [(x) x]
-        [(x y) (bin-op x y)]
-        [xs (name-concat xs)]))))
+(define-syntax (define+provide-family stx)
+  (syntax-parse stx
+    [(_ name:id bin-op:expr)
+     #:with name-concat (format-id this-syntax "~a-concat" #'name)
+     #:with name-append (format-id this-syntax "~a-append" #'name)
+     #'(begin
+         (provide name-concat
+                  name-append)
+         (define (name-concat xs)
+           (fold-doc bin-op xs))
+         (define name-append
+           (case-lambda
+             [() empty-doc]
+             [(x) x]
+             [(x y) (bin-op x y)]
+             [xs (name-concat xs)])))]))
 
 (define+provide-family u concat)
 (define <> u-append)
