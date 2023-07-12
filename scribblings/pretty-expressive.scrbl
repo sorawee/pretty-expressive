@@ -487,7 +487,9 @@ the @deftech{cost factory} interface.
   ]
 }
 
-@defproc[(default-cost-factory [page-width natural?] [computation-width natural?]) cost-factory?]{
+@defproc[(default-cost-factory [#:page-width page-width natural? (current-page-width)]
+                               [#:computation-width computation-width natural? (current-computation-width)])
+         cost-factory?]{
   The default cost factory that is employed for @racket[pretty-print].
   A cost satisfies the contract @racket[(list/c natural? natural?)].
   For a cost @racket[(list b h)], @racket[b] is the @deftech{badness}, which is the sum of squared overflows,
