@@ -33,7 +33,8 @@
          get-memo-limit)
 
 (module+ private
-  (provide (struct-out doc)))
+  (provide (struct-out doc)
+           make-text))
 
 (require racket/match
          syntax/parse/define
