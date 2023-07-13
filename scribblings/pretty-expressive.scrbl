@@ -350,6 +350,18 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
   ]
 }
 
+
+@defproc[(full [x doc?]) doc?]{
+  Constrains that @tech{doc} @racket[x] cannot be followed by any text in the same line.
+
+  @examples[#:eval evaluator
+    (pretty-print (<> (full (text "abc")) nl (text "def")))
+    (pretty-print (<> (full (text "abc")) nl (full (text "def"))))
+    (pretty-print (<> (full (text "abc")) (text "")))
+    (eval:error (pretty-print (<> (full (text "abc")) (text "def"))))
+  ]
+}
+
 @defproc[(flat [x doc?]) doc?]{
   Constrains @tech{doc} @racket[x] to fit in one line.
   If @racket[x] can't fit in one line, it @racket[fail]s to render.
