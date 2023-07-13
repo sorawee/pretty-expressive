@@ -70,5 +70,5 @@
      [md5 ,(string->symbol (~a (md5 out)))]
      [page-width ,(current-page-width)]
      [computation-width ,(current-computation-width)]
-     [tainted? ,tainted?]
+     [tainted? ,(if tainted? "true" "false")]
      [memo-limit ,(get-memo-limit)])))
