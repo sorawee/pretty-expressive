@@ -18,6 +18,7 @@
 (define current-size (make-parameter #f))
 (define current-out (make-parameter #f))
 (define current-program (make-parameter #f))
+(define current-view-cost? (make-parameter #f))
 
 (define (setup program
                #:size size
@@ -28,6 +29,7 @@
   (current-size size)
   (current-out #f)
   (current-program program)
+  (current-view-cost? #f)
   (command-line
    #:once-each
    [("--page-width")
@@ -42,6 +44,9 @@
     size
     [(format "Size (default: ~a)" size)]
     (current-size (string->number size))]
+   [("--view-cost")
+    "Output cost (default: no)"
+    (current-view-cost? #t)]
    [("--out")
     out
     "Path for the output; - means stdout (default: do not output)"
@@ -53,7 +58,7 @@
 
 ;; do-bench :: doc? -> void?
 (define (do-bench d)
-  (match-define-values [(list (info out tainted? _)) _ duration _]
+  (match-define-values [(list (info out tainted? cost)) _ duration _]
     (time-apply (λ () (pretty-format/factory/info d (default-cost-factory))) '()))
   (match (current-out)
     [#f (void)]
@@ -61,6 +66,10 @@
     [dest (with-output-to-file dest
             #:exists 'replace
             (λ () (displayln out)))])
+
+  (when (current-view-cost?)
+    (fprintf (current-error-port) "(cost ~a)\n" cost))
+
   (r:pretty-write
    `([target pretty-expressive-racket]
      [program ,(string->symbol (current-program))]
