@@ -26,7 +26,7 @@
 @defmodule[pretty-expressive]
 
 This library implements a pretty expressive printer, following the algorithm presented in @citet[Porncharoenwase23:pretty-expressive].
-The pretty printer is very expressive, provably optimal, and practically efficient.
+The pretty printer is expressive, provably optimal, and practically efficient.
 It is similar to another library @racketmodname[pprint #:indirect], but that library employs a greedy algorithm.
 As a result, @racketmodname[pretty-expressive], when compared to PPrint, is more expressive and optimal, at the cost of being less efficient.
 
@@ -36,13 +36,14 @@ This documentation and its structure are shamelessly copied/adapted from the PPr
 
 @section{Getting Started}
 
-Pretty printing is a process to produce human-readable text from a structured data.
-Users would encode the structured data along with styling choices together as
-an abstract document, or simply @deftech{doc}.
-Choices in a @tech{doc} could yield many possible layouts.
-The pretty printer's task is to choose an optimal layout
-(e.g., not exceeding the @deftech{page width limit} while minimizing number of lines)
-and present it to users.
+Pretty printing is a process for producing human readable text from structured
+data. Users encode the structured data together with styling choices in an
+abstract document, which we'll call a @deftech{doc}. This @tech{doc} contains printing
+instructions: things like text, newlines, indentation, and styling. It can also
+contain @deftech{choices} (@racket[alt]) between two or more alternatives, resulting
+in many possible layouts for a document. The pretty printer's job is to pick
+the optimal layout from among all of the choices. E.g., the one that minimizes
+the number of lines which not exceeding the page width limit.
 
 Here's a simple example of pretty printing a document encoding a fragment of code.
 
@@ -60,20 +61,21 @@ Here's a simple example of pretty printing a document encoding a fragment of cod
                              (nest 4 (<> nl exit-doc)))))))
         nl
         (text "}")))
-  (code:comment "Print the document (find the optimal layout and render it)")
-  (pretty-print doc #:page-width 80)
 ]
 
-With a different page width limit, the document could be printed differently:
+It has a choice between two alternatives (@racket[alt]), so it has two possible
+layouts. If we print it with a page width limit of 80, we get one layout, and if we print it
+with a page width limit of 40 we get another:
 
 @examples[#:label #f #:eval evaluator
+  (pretty-print doc #:page-width 80)
   (pretty-print doc #:page-width 20)
 ]
 
 @section{Documents}
 
 The library provides many functions (see @secref{Constructing_Documents}) for
-building and combining @tech{doc}s, which can then be printed.
+building and combining @tech{doc}s, which can then be printed
 (see @secref{Printing_Documents}).
 
 @defproc[(doc? [x any/c]) boolean?]{
@@ -82,7 +84,7 @@ building and combining @tech{doc}s, which can then be printed.
 
 @section{Best Practice for Document Construction}
 
-The arguments to @racket[alt] should roughly have the same content, albeit with different formats.
+The arguments to @racket[alt] should typically have the same content, but with different formats.
 Although the @deftech{tree size} of a @tech{doc} containing @racket[alt] tends to blow up exponentially,
 the time complexity of our algorithm depends on the @deftech{DAG size} of the @tech{doc}.
 As a result, provided that sub-documents are sufficiently @emph{shared},
@@ -159,9 +161,9 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
   The optimality of the output is only guanranteed when the output fits the @deftech{computation width} @racket[computation-width].
   The worst case time complexity of pretty printing is proportional to the DAG size of @racket[d] and
   the 4th power of @racket[computation-width] (although in practice it is much lower than that).
-  If @racket[computation-width] has the @racket[#f] value, its effective value is @math{1.2 × @racket[page-width]}.
+  If @racket[computation-width] has the value @racket[#f], its effective value is @math{1.2 × @racket[page-width]}.
 
-  The optimality objective for this pretty printing is according to @racket[default-cost-factory].
+  The optimality objective for this pretty printing is given by @racket[default-cost-factory].
 
 @examples[#:eval evaluator
   (define prefix-s "values are: ")
@@ -220,7 +222,7 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
                  [tainted? boolean?]
                  [cost any/c])]{
   A structure type that contains both the output of pretty printing and debugging information:
-  taintedness and cost of the output layout.
+  taintedness (whether the computation width limit was exceeded) and cost of the output layout.
 }
 
 @subsection{Constructing Documents}
@@ -235,7 +237,7 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
 }
 
 @defproc[(alt [x doc?] ...) doc?]{
-  Constructs a @tech{doc} which is rendered to one of @racket[x]s, whichever resulting in the prettiest layout for the whole document. If given no arguments, the resulting doc is @racket[fail].
+  Constructs a @tech{doc} which is rendered to one of @racket[x]s, whichever results in the prettiest layout for the whole document. If given no arguments, the resulting doc is @racket[fail].
 
   See also @secref["Best_Practice_for_Document_Construction"].
 }
@@ -383,7 +385,7 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
 }
 
 @defproc[(group [x doc?]) doc?]{
-  Creates two choices: @racket[(flatten x)] and @racket[x].
+  Creates a choice between @racket[(flatten x)] and @racket[x].
 }
 
 @defproc[(cost [n any/c] [x doc?]) doc?]{
@@ -391,7 +393,7 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
   See @secref{Cost_factory} for more details.
 }
 
-@subsection{Useful Constants}
+@subsection{Constants}
 
 
 @defthing[empty-doc doc?]{
@@ -447,7 +449,7 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
 @subsection{Match Expanders}
 
 Internally, a @tech{doc} is either a @racket[:text], @racket[:nl], @racket[:concat], @racket[:alternatives], @racket[:align], @racket[:nest], @racket[:full], @racket[:fail], or @racket[:cost].
-We provide these @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{match expander}s to allow @tech{doc} processing (see @secref{Processing_Documents}.
+We provide these @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{match expander}s to allow @tech{doc} processing (see @secref{Processing_Documents}).
 The match expanders are illegal outside of the pattern position of the @racket[match] form.
 Keep in mind that this list is unstable and could change across versions of the library.
 
@@ -493,7 +495,7 @@ Keep in mind that this list is unstable and could change across versions of the 
 Pretty printers choose an optimal layout from a document
 by minimizing an @deftech{optimality objective}.
 Unlike other pretty printers, which have built-in optimality objectives,
-@racketmodname[pretty-expressive] allows users to customize an optimality objective via
+@racketmodname[pretty-expressive] allows you to customize an optimality objective via
 the @deftech{cost factory} interface.
 
 @defstruct[cost-factory ([cost<=? (-> any/c any/c any/c)]
@@ -506,9 +508,9 @@ the @deftech{cost factory} interface.
   @itemlist[
     @item{@racket[(cost<=? a b)] determines whether the cost @racket[a] is less than or equal to the cost @racket[b].}
     @item{@racket[(cost+ a b)] combines costs @racket[a] and @racket[b] together to produce a new cost.}
-    @item{@racket[(cost-text c len)] produces a cost due to a text placement at column position @racket[c] when the text has length @racket[len].}
-    @item{@racket[(cost-nl i)] produces a cost due to a newline along with @racket[i] indentation spaces.}
-    @item{@racket[limit] is the actual value for computation width limit.}
+    @item{@racket[(cost-text c len)] gives the cost of placing text of length @racket[len] at column position @racket[c].}
+    @item{@racket[(cost-nl i)] gives the cost of a newline followed by an indentation of @racket[i] spaces.}
+    @item{@racket[limit] is the computation width limit.}
   ]
 
   These functions should at minimum satisfy the following properties:
@@ -517,15 +519,10 @@ the @deftech{cost factory} interface.
     @item{@racket[cost<=?] should be a total order: reflexive, antisymmetric, and total.}
     @item{For all costs @racket[a], @racket[b], @racket[c], and @racket[d], such that @racket[(cost<=? a b)] and @racket[(cost<=? c d)],
           @racket[cost+] should satisfy @racket[(cost<=? (cost+ a c) (cost+ b d))].}
-    @item{For all @racket[c], @racket[c*], and @racket[i], such that @racket[(<= c c*)],
-         @racket[cost-text] should satisfy @racket[(cost<=? (cost-text c i) (cost-text c* i))].}
+    @item{For all @racket[c], @racket[c*], and @racket[len], such that @racket[(<= c c*)],
+         @racket[cost-text] should satisfy @racket[(cost<=? (cost-text c len) (cost-text c* len))].}
     @item{For all @racket[i] and @racket[i*] such that @racket[(<= i i*)],
           @racket[cost-nl] should satisfy @racket[(cost<=? (cost-nl i) (cost-nl i*))].}
-  ]
-
-  But for a cost factory to be well-formed in presence of rewriting rules, further properties are required:
-
-  @itemlist[
     @item{@racket[cost+] should be commutative and associative.}
     @item{@racket[(cost+ (cost-text c len) (cost-text (+ c len) len*))] should be equal to @racket[(cost-text c (+ len len*))].}
   ]
