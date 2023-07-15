@@ -74,7 +74,6 @@
              failing/no/yes ; fails when not full before and full after?
              failing/yes/yes ; fails when full before and full after?
              nl-cnt) ; overapproximation of newline count
-  #:transparent
   #:mutable)
 
 (begin-for-syntax

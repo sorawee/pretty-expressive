@@ -21,6 +21,6 @@
           (loop xs (alt (<+> acc space (text x))
                         (<$> acc (text x))))]))]))
 
-(define lines (file->lines "/usr/share/dict/words"))
+(define lines (file->lines (build-path (getenv "BENCHDATA") "words")))
 (define doc (fill-sep (take lines (current-size))))
 (do-bench doc)
