@@ -95,6 +95,11 @@
     (match-define (measure last2 cost2 tok2) m2)
     (measure last2 (cost+ cost1 cost2) (λ (tks) (tok1 (tok2 tks)))))
 
+  (define (cost-big-text c xs)
+    (for/fold ([sum (cost-text c (string-length (first xs)))])
+              ([line (in-list (rest xs))])
+      (cost+ sum (cost+ (cost-nl 0) (cost-text 0 (string-length line))))))
+
   (define limit+1 (add1 limit))
 
   (define (memoize f)
@@ -118,42 +123,26 @@
     (memoize
      (λ (d c i beg-full? end-full?)
        (define (core)
+         ;; NOTE 1: for :full and leaf nodes
+         ;; (:text, :nl, and :big-text in particular),
+         ;; we can assume that the result will not be failing,
+         ;; because if it should be failing, it would have already failed earlier
+         ;; from failing flags that are set from doc construction.
          (match d
            [(struct* :text ([s s] [len len]))
-            (define (m)
-              (list (measure (+ c len)
-                             (cost-text c len)
-                             (λ (tks)
-                               (cond
-                                 [(string? s) (cons s tks)]
-                                 [else (append (flatten s) tks)])))))
-            (cond
-              [beg-full?
-               (cond
-                 [(and end-full? (zero? len)) (m)]
-                 [else '()])]
-              [else
-               (cond
-                 [end-full? '()]
-                 [else (m)])])]
-
-           [(struct* :full ([d d]))
-            (cond
-              [end-full?
-               (merge (resolve d c i beg-full? #f) (resolve d c i beg-full? #t))]
-              [else '()])]
+            ;; Per Note 1, no need to check for failure
+            (list (measure (+ c len)
+                           (cost-text c len)
+                           (λ (tks)
+                             (cond
+                               [(string? s) (cons s tks)]
+                               [else (append (flatten s) tks)]))))]
 
            [(struct* :nl ())
-            (cond
-              [end-full? '()]
-              [else
-               (list (measure i
-                              (cost-nl i)
-                              (λ (tks) (list* "\n" (make-string i #\space) tks))))])]
-
-           [(struct* :align ([d d])) (resolve d c c beg-full? end-full?)]
-
-           [(struct* :nest ([n n] [d d])) (resolve d c (+ i n) beg-full? end-full?)]
+            ;; Per Note 1, no need to check for failure
+            (list (measure i
+                           (cost-nl i)
+                           (λ (tks) (list* "\n" (make-string i #\space) tks))))]
 
            [(struct* :concat ([a a] [b b]))
             ;; analyze-left-ms :: bool? -> measure-set/c
@@ -169,7 +158,7 @@
                         ['() '()]
                         [(list b-m) (list (concat-measure a-m b-m))])]))]
                 [a-ms
-                 ;; NOTE: Here, resolving `a` succeeds.
+                 ;; NOTE 2: Here, resolving `a` succeeds.
                  ;; We are now resolving `b` with many different `c` values,
                  ;; and concat the measures and merge them together:
                  ;;
@@ -215,6 +204,10 @@
             (merge (resolve a c i beg-full? end-full?)
                    (resolve b c i beg-full? end-full?))]
 
+           [(struct* :align ([d d])) (resolve d c c beg-full? end-full?)]
+
+           [(struct* :nest ([n n] [d d])) (resolve d c (+ i n) beg-full? end-full?)]
+
            [(struct* :cost ([n n] [d d]))
             (match (resolve d c i beg-full? end-full?)
               [(? promise? mt)
@@ -226,6 +219,16 @@
               [ms
                (for/list ([m (in-list ms)])
                  (struct-copy measure m [cost (cost+ (measure-cost m) n)]))])]
+
+           [(struct* :full ([d d]))
+            ;; Per Note 1, no need to check for failure
+            (merge (resolve d c i beg-full? #f) (resolve d c i beg-full? #t))]
+
+           [(struct* :big-text ([xs xs]))
+            ;; Per Note 1, no need to check for failure
+            (list (measure (string-length (last xs))
+                           (cost-big-text c xs)
+                           (λ (tks) (append (add-between xs "\n") tks))))]
 
            ;; This is essentially a dead code.
            ;; Partial evaluation should have removed all fails away already.
@@ -250,10 +253,7 @@
                         set-doc-failing/no/no!)) d #t)
                '()]
               [result result]))]
-         [else
-          (define ret (core))
-          ;; (printf "~a: ~a\n" d ret)
-          ret]))))
+         [else (core)]))))
 
   (define result
     (merge (resolve d offset offset #f #f) (resolve d offset offset #f #t)))

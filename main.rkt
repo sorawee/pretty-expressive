@@ -217,4 +217,9 @@ hello: ((abcde ((a b c d)
           (a b c d)
           (a b c d))))
 EOF
-                ))
+                )
+
+  (check-equal? (pretty-format (nest 4 (big-text "abc\ndef")))
+                "abc\ndef")
+  (check-equal? (pretty-format (nest 4 (<> (text "abc") nl (text "def"))))
+                "abc\n    def"))
