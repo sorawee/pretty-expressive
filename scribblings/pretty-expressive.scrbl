@@ -65,7 +65,7 @@ Here's a simple example of pretty printing a document encoding a fragment of cod
 
 It has a choice between two alternatives (@racket[alt]), so it has two possible
 layouts. If we print it with a page width limit of 80, we get one layout, and if we print it
-with a page width limit of 40 we get another:
+with a page width limit of 20 we get another:
 
 @examples[#:label #f #:eval evaluator
   (pretty-print doc #:page-width 80)
@@ -165,25 +165,35 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
 
   The optimality objective for this pretty printing is given by @racket[default-cost-factory].
 
-@examples[#:eval evaluator
-  (define prefix-s "values are: ")
-  (define doc (<$> (<+> lparen
-                        (<$> (text "'Rhoam Bosphoramus Hyrule'")
-                             (text "'Daphnes Nohansen Hyrule'"))
-                        rparen)
-                   (<+> lparen
-                        (text "'2B'")
-                        space
-                        (text "'9S'")
-                        space
-                        (text "'A2'")
-                        rparen)))
-  (begin
-    (display prefix-s)
-    (pretty-print doc #:offset (string-length prefix-s)))
-  (begin
-    (display prefix-s)
-    (pretty-print doc))]}
+  @examples[#:eval evaluator
+    (define doc (<$> (<+> lparen
+                          (<$> (text "'Rhoam Bosphoramus Hyrule'")
+                               (text "'Daphnes Nohansen Hyrule'"))
+                          rparen)
+                     (<+> lparen
+                          (text "'2B'")
+                          space
+                          (text "'9S'")
+                          space
+                          (text "'A2'")
+                          rparen)))
+    (pretty-print doc)
+  ]
+
+  The @racket[offset] argument is particularly helpful when there is already some preceding text printed to the screen,
+  and we wish to pretty-printing after that.
+
+  @examples[#:eval evaluator
+    (define prefix-s "values are: ")
+    (begin
+      (display prefix-s)
+      (pretty-print doc #:offset (string-length prefix-s)))
+    (code:comment @#,elem{Without @racket[#:offset], the output will not be correctly aligned.})
+    (begin
+      (display prefix-s)
+      (pretty-print doc))
+  ]
+}
 
 @defproc[(pretty-format [d doc?]
                         [#:page-width page-width natural? (current-page-width)]
@@ -230,14 +240,22 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
 @defproc[(text [s string?]) doc?]{
   Constructs a @tech{doc} containing the fixed string @racket[s].
   @racket[s] must @bold{not} contain a newline character.
+
+
+  @examples[#:eval evaluator
+    (pretty-print (text "Portal"))
+  ]
 }
 
+
 @defthing[nl doc?]{
-  A newline document.
+  A newline document. It renders to a newline character along with indentation spaces.
 }
 
 @defproc[(alt [x doc?] ...) doc?]{
-  Constructs a @tech{doc} which is rendered to one of @racket[x]s, whichever results in the prettiest layout for the whole document. If given no arguments, the resulting doc is @racket[fail].
+  Constructs a @tech{doc} which is rendered to one of @racket[x]s,
+  whichever results in the prettiest layout for the whole document.
+  If given no arguments, the resulting doc is @racket[fail].
 
   See also @secref["Best_Practice_for_Document_Construction"].
 }
@@ -245,12 +263,13 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
 @deftogether[(@defproc[(v-append [x doc?] ...) doc?]
               @defproc[(<$> [x doc?] ...) doc?])]{
   Concatenates @tech{doc} @racket[x]s vertically.
+  @racket[(<$> a b)] is equivalent to @racket[(<> a nl b)].
 
   @examples[#:eval evaluator
     (pretty-print
-      (<$> (text "Splatoon 2")
-           (text "Nier Automata")
-           (text "Breath of the Wild")))
+      (<$> (text "Tears of the Kingdom")
+           (text "Breath of the Wild")
+           (text "Ocarina of Time")))
   ]
 }
 
@@ -264,11 +283,11 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
 
   @examples[#:eval evaluator
   (define left-doc
-    (<$> (text "Splatoon 2")
+    (<$> (text "Splatoon")
          (text "Nier")))
   (define right-doc
     (<$> (text "Automata")
-         (text "Breath of the Wild")))
+         (text "FEZ")))
     (pretty-print (<> left-doc right-doc))
   ]
 }
@@ -355,18 +374,26 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
 
 @defproc[(full [x doc?]) doc?]{
   Constrains that @tech{doc} @racket[x] cannot be followed by any text in the same line.
+  Otherwise, it @racket[fail]s to render.
+  @racket[full] is particularly suitable for imposing constraints for inline comments,
+  which should not be followed by any other code (as the code would be commented out).
 
   @examples[#:eval evaluator
-    (pretty-print (<> (full (text "abc")) nl (text "def")))
-    (pretty-print (<> (full (text "abc")) nl (full (text "def"))))
-    (pretty-print (<> (full (text "abc")) (text "")))
-    (eval:error (pretty-print (<> (full (text "abc")) (text "def"))))
+    (define the-comment (full (text "# this is a comment")))
+    (define the-code (text "print(1)"))
+    (pretty-print (<> the-comment nl the-code))
+    (eval:error (pretty-print (<> the-comment the-code)))
+    (pretty-print (alt (<> the-comment the-code)
+                       (<> the-comment nl the-code)))
+
+    (pretty-print (<> the-comment nl (full (text "# this is another comment"))))
+    (pretty-print (<> the-comment (text "")))
   ]
 }
 
 @defproc[(flat [x doc?]) doc?]{
   Constrains @tech{doc} @racket[x] to fit in one line.
-  If @racket[x] can't fit in one line, it @racket[fail]s to render.
+  Otherwise, it @racket[fail]s to render.
 
   @examples[#:eval evaluator
     (eval:error (pretty-print (flat (<$> (text "a") (text "b")))))
@@ -391,6 +418,37 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
 @defproc[(cost [n any/c] [x doc?]) doc?]{
   Adds a cost @racket[n] to @racket[x].
   See @secref{Cost_factory} for more details.
+}
+
+@defproc[(big-text [s string?]) doc?]{
+  Constructs a @tech{doc} containing the fixed string @racket[s].
+  @racket[s] can contain newline characters,
+  but these newline characters will be displayed without
+  taking the indentation level into account,
+  so they are not the same as a combination of @racket[text] and @racket[nl].
+  @racket[big-text] is particularly suitable for herestrings and multiple line comments
+  in programming languages.
+
+  @examples[#:eval evaluator
+    (pretty-print
+     (nest
+      2
+      (<> (text "define x:")
+          nl
+          (big-text "#<<EOF\nFire Emblem\nMario + Rabbids\nXCOM\nEOF"))))
+    (code:comment "Contrast this with")
+    (pretty-print (nest 2 (<> (text "define x:")
+                              nl
+                              (text "#<<EOF")
+                              nl
+                              (text "Fire Emblem")
+                              nl
+                              (text "Mario + Rabbids")
+                              nl
+                              (text "XCOM")
+                              nl
+                              (text "EOF"))))
+  ]
 }
 
 @subsection{Constants}
@@ -456,6 +514,11 @@ Keep in mind that this list is unstable and could change across versions of the 
 
 @defform[(:text s)]{
   A match expander that recognizes text @racket[s] of type @racket[string?].
+}
+
+@defform[(:big-text xs)]{
+  A match expander that recognizes multiple lines of text @racket[xs] of type @racket[(listof string?)],
+  where @racket[xs] has length at least one.
 }
 
 @defform[(:nl)]{
