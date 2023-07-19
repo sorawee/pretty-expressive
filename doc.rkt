@@ -11,6 +11,7 @@
          :nl
          :fail
          :text
+         :big-text
          :alternatives
          :concat
          :nest
@@ -22,6 +23,7 @@
          nl
          fail
          text
+         big-text
          alternatives
          concat
          nest
@@ -33,10 +35,11 @@
          get-memo-limit)
 
 (module+ private
-  (provide (struct-out doc)
-           make-text))
+  (provide (struct-out doc)))
 
 (require racket/match
+         racket/list
+         racket/string
          (for-syntax racket/base
                      syntax/parse/pre))
 
@@ -79,8 +82,7 @@
 (begin-for-syntax
   (define-splicing-syntax-class fail-flag
     (pattern {~seq #:fail value ...})
-    (pattern {~seq}
-             #:with (value ...) #'(#f #f #f #f))))
+    (pattern {~seq} #:with (value ...) #'(#f #f #f #f))))
 
 ;; calc-weight :: doc -> natural?
 ;; Calculate the current memo weight in range 0 to memo-weight-limit - 1
@@ -154,6 +156,29 @@
 
 (define (make-text s len)
   (inst-leaf-doc make-text* #:fail #f #t #t (not (zero? len)) #:args 0 s len))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A big-text consists of:
+;; - xs :: (listof string?)
+;; where xs has at least one element
+(struct :big-text doc (xs) #:transparent #:constructor-name make-big-text*)
+
+(define (make-big-text xs)
+  (define first-line-non-empty? (not (zero? (string-length (first xs)))))
+  (define nl-cnt (sub1 (length xs)))
+  (inst-leaf-doc make-big-text*
+                 #:fail
+                 ; no/no : this is always not failing
+                 #f
+                 ; yes/no : this is failing when the first line is non-empty
+                 first-line-non-empty?
+                 ; no/yes : this is always failing
+                 #t
+                 ; yes/yes : this is failing when the first line is non-empty
+                 ;           or there is more than one line
+                 (or first-line-non-empty? (not (zero? nl-cnt)))
+                 #:args nl-cnt xs))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -265,6 +290,11 @@
 
 (define (text s)
   (make-text s (string-length s)))
+
+(define (big-text s)
+  (match (string-split s "\n" #:trim? #f)
+    ['() (make-big-text '(""))]
+    [xs (make-big-text xs)]))
 
 (define (concat a b)
   (cond-dbg
