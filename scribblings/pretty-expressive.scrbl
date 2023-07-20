@@ -402,7 +402,10 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
 }
 
 @defproc[(flatten [x doc?]) doc?]{
-  Flattens @tech{doc} @racket[x] so that all newlines are replaced with spaces.
+  Flattens @tech{doc} @racket[x] so that all newlines and indentation spaces
+  due to @racket[nl] are replaced with spaces.
+  Since a @racket[big-text] with more than one line can't be flattened,
+  doing so would result in a @racket[fail]. See @racket[big-text] for details.
 
   @examples[#:eval evaluator
     (define doc (<$> (text "a") (text "b") (text "c")))
@@ -448,6 +451,13 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
                               (text "XCOM")
                               nl
                               (text "EOF"))))
+  ]
+
+  @racket[flatten] and @racket[flat] on a @racket[big-text] with more than one line
+  will result in a @racket[fail].
+
+  @examples[#:eval evaluator
+    (pretty-print (flatten (big-text "a\nb\nc")))
   ]
 }
 
