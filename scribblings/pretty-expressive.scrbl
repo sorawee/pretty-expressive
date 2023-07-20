@@ -457,7 +457,7 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
   will result in a @racket[fail].
 
   @examples[#:eval evaluator
-    (pretty-print (flatten (big-text "a\nb\nc")))
+    (eval:error (pretty-print (flatten (big-text "a\nb\nc"))))
   ]
 }
 
