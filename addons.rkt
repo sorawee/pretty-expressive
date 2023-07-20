@@ -106,6 +106,10 @@
     (hash-ref! flat-map d
                (λ ()
                  (match d
+                   [(struct* :big-text ([xs xs]))
+                    (match xs
+                      [(list _) d]
+                      [_ fail])]
                    [(struct* :align ([d d])) (doc-process loop d)]
                    [(struct* :nest ([d d])) (doc-process loop d)]
                    [(struct* :nl ()) fail]
@@ -120,6 +124,10 @@
     (hash-ref! flatten-map d
                (λ ()
                  (match d
+                   [(struct* :big-text ([xs xs]))
+                    (match xs
+                      [(list _) d]
+                      [_ fail])]
                    [(struct* :align ([d d])) (doc-process loop d)]
                    [(struct* :nest ([d d])) (doc-process loop d)]
                    [(struct* :nl ()) space]
