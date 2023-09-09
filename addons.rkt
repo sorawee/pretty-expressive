@@ -15,6 +15,10 @@
          rbrace
          comma
 
+         nl
+         break
+         hard-nl
+
          alt
 
          <>
@@ -23,7 +27,6 @@
          <+>
          <+s>
 
-         flat
          flatten
          group
 
@@ -46,6 +49,10 @@
 (define lbrace (text "{"))
 (define rbrace (text "}"))
 (define comma (text ","))
+
+(define nl (newline " "))
+(define break (newline ""))
+(define hard-nl (newline #f))
 
 (define (alt . xs)
   (for/foldr ([current fail]) ([x (in-list xs)])
@@ -83,7 +90,7 @@
 (define <s> us-append)
 
 (define (v-append/bin x y)
-  (<> x nl y))
+  (<> x hard-nl y))
 (define+provide-family v v-append/bin)
 (define <$> v-append)
 
@@ -99,24 +106,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define flat-map (make-weak-hasheq))
-
-(define (flat d)
-  (let loop ([d d])
-    (hash-ref! flat-map d
-               (λ ()
-                 (match d
-                   [(struct* :big-text ([xs xs]))
-                    (match xs
-                      [(list _) d]
-                      [_ fail])]
-                   [(struct* :align ([d d])) (doc-process loop d)]
-                   [(struct* :nest ([d d])) (doc-process loop d)]
-                   [(struct* :nl ()) fail]
-                   [_ (doc-process loop d)])))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define flatten-map (make-weak-hasheq))
 
 (define (flatten d)
@@ -124,13 +113,13 @@
     (hash-ref! flatten-map d
                (λ ()
                  (match d
-                   [(struct* :big-text ([xs xs]))
-                    (match xs
-                      [(list _) d]
-                      [_ fail])]
                    [(struct* :align ([d d])) (doc-process loop d)]
+                   [(struct* :reset ([d d])) (doc-process loop d)]
                    [(struct* :nest ([d d])) (doc-process loop d)]
-                   [(struct* :nl ()) space]
+                   [(struct* :newline ([s s]))
+                    (cond
+                      [s (text s)]
+                      [else fail])]
                    [_ (doc-process loop d)])))))
 
 (define (group d)

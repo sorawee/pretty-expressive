@@ -3,7 +3,7 @@
          scriblib/autobib
          @for-label[pretty-expressive
                     pretty-expressive/process
-                    racket/base
+                    (except-in racket/base newline)
                     racket/contract
                     racket/math
                     racket/match]]
@@ -247,10 +247,12 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
   ]
 }
 
-
-@defthing[nl doc?]{
-  A newline document. It renders to a newline character along with indentation spaces.
+@defproc[(newline [s (or/c #f string?)]) doc?]{
+  A newline document, which renders to a newline character along with indentation spaces.
+  Under @racket[flatten], it is reduced to @racket[s] if @racket[s] is not @racket[#f],
+  and it fails to render if @racket[s] is @racket[#f].
 }
+
 
 @defproc[(alt [x doc?] ...) doc?]{
   Constructs a @tech{doc} which is rendered to one of @racket[x]s,
@@ -262,8 +264,8 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
 
 @deftogether[(@defproc[(v-append [x doc?] ...) doc?]
               @defproc[(<$> [x doc?] ...) doc?])]{
-  Concatenates @tech{doc} @racket[x]s vertically.
-  @racket[(<$> a b)] is equivalent to @racket[(<> a nl b)].
+  Concatenates @tech{doc} @racket[x]s vertically using @racket[hard-nl].
+  @racket[(<$> a b)] is equivalent to @racket[(<> a hard-nl b)].
 
   @examples[#:eval evaluator
     (pretty-print
@@ -274,7 +276,7 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
 }
 
 @defproc[(v-concat [xs (listof doc?)]) doc?]{
-  Concatenates @tech{doc}s in @racket[xs] vertically.
+  Concatenates @tech{doc}s in @racket[xs] vertically using @racket[hard-nl].
 }
 
 @deftogether[(@defproc[(u-append [x doc?] ...) doc?]
@@ -391,26 +393,23 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
   ]
 }
 
-@defproc[(flat [x doc?]) doc?]{
-  Constrains @tech{doc} @racket[x] to fit in one line.
-  Otherwise, it @racket[fail]s to render.
-
-  @examples[#:eval evaluator
-    (eval:error (pretty-print (flat (<$> (text "a") (text "b")))))
-    (pretty-print (<$> (flat (text "a")) (text "b")))
-  ]
-}
-
 @defproc[(flatten [x doc?]) doc?]{
   Flattens @tech{doc} @racket[x] so that all newlines and indentation spaces
-  due to @racket[nl] are replaced with spaces.
-  Since a @racket[big-text] with more than one line can't be flattened,
-  doing so would result in a @racket[fail]. See @racket[big-text] for details.
+  due to @racket[newline] are replaced with its content.
 
   @examples[#:eval evaluator
-    (define doc (<$> (text "a") (text "b") (text "c")))
+    (define doc (<> (text "a") nl (text "b") nl (text "c")))
     (pretty-print doc)
     (pretty-print (flatten doc))
+    (define doc2 (<> (text "a") break (text "b") break (text "c")))
+    (pretty-print doc2)
+    (pretty-print (flatten doc2))
+    (define doc3 (<> (text "a") hard-nl (text "b") hard-nl (text "c")))
+    (pretty-print doc3)
+    (eval:error (pretty-print (flatten doc3)))
+    (define doc4 (<> (text "a") (newline ", ") (text "b") (newline ", ") (text "c")))
+    (pretty-print doc4)
+    (pretty-print (flatten doc4))
   ]
 }
 
@@ -423,46 +422,19 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
   See @secref{Cost_factory} for more details.
 }
 
-@defproc[(big-text [s string?]) doc?]{
-  Constructs a @tech{doc} containing the fixed string @racket[s].
-  @racket[s] can contain newline characters,
-  but these newline characters will be displayed without
-  taking the indentation level into account,
-  so they are not the same as a combination of @racket[text] and @racket[nl].
-  @racket[big-text] is particularly suitable for herestrings and multiple line comments
-  in programming languages.
-
-  @examples[#:eval evaluator
-    (pretty-print
-     (nest
-      2
-      (<> (text "define x:")
-          nl
-          (big-text "#<<EOF\nFire Emblem\nMario + Rabbids\nXCOM\nEOF"))))
-    (code:comment "Contrast this with")
-    (pretty-print (nest 2 (<> (text "define x:")
-                              nl
-                              (text "#<<EOF")
-                              nl
-                              (text "Fire Emblem")
-                              nl
-                              (text "Mario + Rabbids")
-                              nl
-                              (text "XCOM")
-                              nl
-                              (text "EOF"))))
-  ]
-
-  @racket[flatten] and @racket[flat] on a @racket[big-text] with more than one line
-  will result in a @racket[fail].
-
-  @examples[#:eval evaluator
-    (eval:error (pretty-print (flatten (big-text "a\nb\nc"))))
-  ]
-}
-
 @subsection{Constants}
 
+@defthing[nl doc?]{
+  Same as @racket[(newline " ")]
+}
+
+@defthing[break doc?]{
+  Same as @racket[(newline "")]
+}
+
+@defthing[hard-nl doc?]{
+  Same as @racket[(newline #f)]
+}
 
 @defthing[empty-doc doc?]{
   Same as @racket[(text "")]
@@ -516,7 +488,7 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
 
 @subsection{Match Expanders}
 
-Internally, a @tech{doc} is either a @racket[:text], @racket[:nl], @racket[:concat], @racket[:alternatives], @racket[:align], @racket[:nest], @racket[:full], @racket[:fail], or @racket[:cost].
+Internally, a @tech{doc} is either a @racket[:text], @racket[:newline], @racket[:concat], @racket[:alternatives], @racket[:align], @racket[:reset], @racket[:nest], @racket[:full], @racket[:fail], or @racket[:cost].
 We provide these @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{match expander}s to allow @tech{doc} processing (see @secref{Processing_Documents}).
 The match expanders are illegal outside of the pattern position of the @racket[match] form.
 Keep in mind that this list is unstable and could change across versions of the library.
@@ -526,13 +498,8 @@ Keep in mind that this list is unstable and could change across versions of the 
   A match expander that recognizes text @racket[s] of type @racket[string?].
 }
 
-@defform[(:big-text xs)]{
-  A match expander that recognizes multiple lines of text @racket[xs] of type @racket[(listof string?)],
-  where @racket[xs] has length at least one.
-}
-
-@defform[(:nl)]{
-  A match expander that recognizes a newline.
+@defform[(:newline s)]{
+  A match expander that recognizes a newline that flattens to @racket[s]. When @racket[s] is @racket[#f], it fails to flatten.
 }
 
 @defform[(:concat da db)]{
@@ -545,6 +512,10 @@ Keep in mind that this list is unstable and could change across versions of the 
 
 @defform[(:align d)]{
   A match expander that recognizes an alignment of @tech{doc} @racket[d].
+}
+
+@defform[(:reset d)]{
+  A match expander that recognizes an indentation level reset of @tech{doc} @racket[d].
 }
 
 @defform[(:nest n d)]{

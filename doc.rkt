@@ -8,26 +8,26 @@
 (provide doc?
 
          ;; pattern expanders
-         :nl
+         :newline
          :fail
          :text
-         :big-text
          :alternatives
          :concat
          :nest
          :align
+         :reset
          :full
          :cost
 
          ;; constructor
-         nl
+         newline
          fail
          text
-         big-text
          alternatives
          concat
          nest
          align
+         reset
          full
          cost
 
@@ -38,8 +38,6 @@
   (provide (struct-out doc)))
 
 (require racket/match
-         racket/list
-         racket/string
          (for-syntax racket/base
                      syntax/parse/pre))
 
@@ -132,12 +130,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; A nl is a nullary constructor
-;; (a potential extension could allow it to contain a string for replacement
-;; under flatten)
-(struct :nl doc () #:transparent #:constructor-name make-nl)
+;; A newline consists of:
+;; - s :: (or/c #f string?)
+(struct :newline doc (s) #:transparent #:constructor-name make-newline)
 
-(define nl (inst-leaf-doc make-nl #:fail #f #f #t #t #:args 1))
+(define (newline s)
+  (inst-leaf-doc make-newline #:fail #f #f #t #t #:args 1 s))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -156,29 +154,6 @@
 
 (define (make-text s len)
   (inst-leaf-doc make-text* #:fail #f #t #t (not (zero? len)) #:args 0 s len))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; A big-text consists of:
-;; - xs :: (listof string?)
-;; where xs has at least one element
-(struct :big-text doc (xs) #:transparent #:constructor-name make-big-text*)
-
-(define (make-big-text xs)
-  (define first-line-non-empty? (not (zero? (string-length (first xs)))))
-  (define nl-cnt (sub1 (length xs)))
-  (inst-leaf-doc make-big-text*
-                 #:fail
-                 ; no/no : this is always not failing
-                 #f
-                 ; yes/no : this is failing when the first line is non-empty
-                 first-line-non-empty?
-                 ; no/yes : this is always failing
-                 #t
-                 ; yes/yes : this is failing when the first line is non-empty
-                 ;           or there is more than one line
-                 (or first-line-non-empty? (not (zero? nl-cnt)))
-                 #:args nl-cnt xs))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -230,6 +205,19 @@
 
 (define (make-align d)
   (inst-internal-doc make-align*
+                     #:doc [d]
+                     #:args
+                     (doc-nl-cnt d)
+                     d))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A reset consists of:
+;; - d :: doc?
+(struct :reset doc (d) #:transparent #:constructor-name make-reset*)
+
+(define (make-reset d)
+  (inst-internal-doc make-reset*
                      #:doc [d]
                      #:args
                      (doc-nl-cnt d)
@@ -291,11 +279,6 @@
 (define (text s)
   (make-text s (string-length s)))
 
-(define (big-text s)
-  (match (string-split s "\n" #:trim? #f)
-    ['() (make-big-text '(""))]
-    [xs (make-big-text xs)]))
-
 (define (concat a b)
   (cond-dbg
    [#:dbg (make-concat a b)]
@@ -340,8 +323,9 @@
   (cond-dbg
    [#:dbg (make-nest n d)]
    [#:prod (match d
-             [(? :fail?) fail]
+             [(? :fail?) d]
              [(? :align?) d]
+             [(? :reset?) d]
              [(? :text?) d]
              [(struct* :nest ([n n2] [d d])) (make-nest (+ n n2) d)]
              [_ (make-nest n d)])]))
@@ -350,7 +334,18 @@
   (cond-dbg
    [#:dbg (make-align d)]
    [#:prod (match d
-             [(? :fail?) fail]
+             [(? :fail?) d]
              [(? :align?) d]
+             [(? :reset?) d]
              [(? :text?) d]
              [_ (make-align d)])]))
+
+(define (reset d)
+  (cond-dbg
+   [#:dbg (make-reset d)]
+   [#:prod (match d
+             [(? :fail?) d]
+             [(? :align?) d]
+             [(? :reset?) d]
+             [(? :text?) d]
+             [_ (make-reset d)])]))
