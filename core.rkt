@@ -138,7 +138,7 @@
                                [(string? s) (cons s tks)]
                                [else (append (flatten s) tks)]))))]
 
-           [(struct* :nl ())
+           [(struct* :newline ())
             ;; Per Note 1, no need to check for failure
             (list (measure i
                            (cost-nl i)
@@ -206,6 +206,8 @@
 
            [(struct* :align ([d d])) (resolve d c c beg-full? end-full?)]
 
+           [(struct* :reset ([d d])) (resolve d c 0 beg-full? end-full?)]
+
            [(struct* :nest ([n n] [d d])) (resolve d c (+ i n) beg-full? end-full?)]
 
            [(struct* :cost ([n n] [d d]))
@@ -223,12 +225,6 @@
            [(struct* :full ([d d]))
             ;; Per Note 1, no need to check for failure
             (merge (resolve d c i beg-full? #f) (resolve d c i beg-full? #t))]
-
-           [(struct* :big-text ([xs xs]))
-            ;; Per Note 1, no need to check for failure
-            (list (measure (string-length (last xs))
-                           (cost-big-text c xs)
-                           (λ (tks) (append (add-between xs "\n") tks))))]
 
            ;; This is essentially a dead code.
            ;; Partial evaluation should have removed all fails away already.

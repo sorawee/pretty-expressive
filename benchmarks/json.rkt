@@ -21,7 +21,7 @@
   (string->jsexpr (file->string (build-path (getenv "BENCHDATA") json-file))))
 
 (define (h-append/bin a b)
-  (<> (flat a) b))
+  (<> (flatten a) b))
 
 (define+provide-family h h-append/bin)
 

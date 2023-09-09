@@ -114,7 +114,7 @@
                 space
                 (align (v-concat argsp))
                 rparen)
-            (flat
+            (flatten
              (<> lparen
                  (align (us-concat (cons fp argsp)))
                  rparen)))]
@@ -219,13 +219,13 @@ hello: ((abcde ((a b c d)
 EOF
                 )
 
-  (check-equal? (pretty-format (nest 4 (big-text "abc\ndef")))
+  (check-equal? (pretty-format (nest 4 (reset (<> (text "abc") hard-nl (text "def")))))
                 "abc\ndef")
-  (check-equal? (pretty-format (nest 4 (<> (text "abc") nl (text "def"))))
+  (check-equal? (pretty-format (nest 4 (<> (text "abc") hard-nl (text "def"))))
                 "abc\n    def")
-  (check-equal? (pretty-format (alt (flatten (big-text "a\nb"))
-                                    (text "something")))
+  (check-equal? (pretty-format (alt (flatten (<> (text "abc") nl (text "def")))
+                                    (text "abc def")))
                 "something")
-  (check-equal? (pretty-format (alt (flat (big-text "a\nb"))
+  (check-equal? (pretty-format (alt (flatten (<> (text "abc") hard-nl (text "def")))
                                     (text "something")))
                 "something"))

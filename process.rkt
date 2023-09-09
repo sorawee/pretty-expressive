@@ -11,7 +11,7 @@
 (define (doc-process f doc)
   (match doc
     [(struct* :text ()) doc]
-    [(struct* :nl ()) nl]
+    [(struct* :newline ()) doc]
     [(struct* :concat ([a a] [b b]))
      (define a* (f a))
      (define b* (f b))
@@ -29,6 +29,11 @@
      (cond
        [(eq? d* d) doc]
        [else (align d*)])]
+    [(struct* :reset ([d d]))
+     (define d* (f d))
+     (cond
+       [(eq? d* d) doc]
+       [else (reset d*)])]
     [(struct* :nest ([n n] [d d]))
      (define d* (f d))
      (cond
@@ -44,5 +49,4 @@
      (cond
        [(eq? d* d) doc]
        [else (cost n d*)])]
-    [(struct* :big-text ()) doc]
     [(struct* :fail ()) fail]))
