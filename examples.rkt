@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require pretty-expressive)
+(require pretty-expressive
+         (prefix-in r: racket/base))
 
 (define d-traditional
   (<> (text "function append(first,second,third){")
@@ -84,14 +85,14 @@ EOF
 
 (module+ main
   (pretty-print d-traditional #:page-width 22)
-  (newline)
+  (r:newline)
   (pretty-print d-arbitrary #:page-width 22)
-  (newline)
+  (r:newline)
   (pretty-print d-pretty-expressive #:page-width 22)
-  (newline)
+  (r:newline)
   (pretty-print d-traditional #:page-width 36)
-  (newline)
+  (r:newline)
   (pretty-print d-arbitrary #:page-width 36)
-  (newline)
+  (r:newline)
   (pretty-print d-pretty-expressive #:page-width 36)
-  (newline))
+  (r:newline))
