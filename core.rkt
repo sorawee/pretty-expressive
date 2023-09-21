@@ -124,7 +124,7 @@
      (λ (d c i beg-full? end-full?)
        (define (core)
          ;; NOTE 1: for :full and leaf nodes
-         ;; (:text, :nl, and :big-text in particular),
+         ;; (:text and :newline in particular),
          ;; we can assume that the result will not be failing,
          ;; because if it should be failing, it would have already failed earlier
          ;; from failing flags that are set from doc construction.
@@ -226,8 +226,9 @@
             ;; Per Note 1, no need to check for failure
             (merge (resolve d c i beg-full? #f) (resolve d c i beg-full? #t))]
 
-           ;; This is essentially a dead code.
-           ;; Partial evaluation should have removed all fails away already.
+           ;; This is almost a dead code.
+           ;; Partial evaluation should have removed most fails away already,
+           ;; except when the document is truly failing.
            [(struct* :fail ()) '()]))
 
        (define column-pos
