@@ -226,9 +226,11 @@
             ;; Per Note 1, no need to check for failure
             (merge (resolve d c i beg-full? #f) (resolve d c i beg-full? #t))]
 
-           ;; This is almost a dead code.
+           ;; This is essentially a dead code.
            ;; Partial evaluation should have removed most fails away already,
            ;; except when the document is truly failing.
+           ;; But in that case, the failure metadata should have been set,
+           ;; and we should have already failed earlier from the memoization step.
            [(struct* :fail ()) '()]))
 
        (define column-pos

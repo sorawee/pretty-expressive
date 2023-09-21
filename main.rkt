@@ -228,4 +228,7 @@ EOF
                 "abc def")
   (check-equal? (pretty-format (alt (flatten (<> (text "abc") hard-nl (text "def")))
                                     (text "something")))
-                "something"))
+                "something")
+
+  (check-exn #px"the document fails to print"
+             (λ () (pretty-format fail))))
