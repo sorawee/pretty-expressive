@@ -363,6 +363,21 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
   ]
 }
 
+@defproc[(reset [d doc?]) doc?]{
+  Resets the indentation level to 0 when rendering the @tech{doc} @racket[d].
+  This is especially useful for formatting multi-line strings and multi-line comments.
+
+  @examples[#:eval evaluator
+    (define subd (reset (<> (text "#<<EOF") nl
+                            (text "Zelda") nl
+                            (text "Baba is you") nl
+                            (text "EOF"))))
+    (pretty-print (<> (text "when 1 = 2:")
+                      (nest 4 (<> nl (text "print ") subd))))
+  ]
+}
+
+
 @defthing[fail doc?]{
   Constructs a @tech{doc} that fails to render.
   This doc interacts with @racket[alt]: failing branches are pruned away.
