@@ -95,11 +95,6 @@
     (match-define (measure last2 cost2 tok2) m2)
     (measure last2 (cost+ cost1 cost2) (λ (tks) (tok1 (tok2 tks)))))
 
-  (define (cost-big-text c xs)
-    (for/fold ([sum (cost-text c (string-length (first xs)))])
-              ([line (in-list (rest xs))])
-      (cost+ sum (cost+ (cost-nl 0) (cost-text 0 (string-length line))))))
-
   (define limit+1 (add1 limit))
 
   (define (memoize f)
