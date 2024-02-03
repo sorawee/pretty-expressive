@@ -49,4 +49,5 @@
      (cond
        [(eq? d* d) doc]
        [else (cost n d*)])]
+    [(struct* :special ()) doc]
     [(struct* :fail ()) fail]))

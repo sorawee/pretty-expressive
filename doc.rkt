@@ -11,6 +11,7 @@
          :newline
          :fail
          :text
+         :special
          :alternatives
          :concat
          :nest
@@ -23,6 +24,7 @@
          newline
          fail
          text
+         special
          alternatives
          concat
          nest
@@ -154,6 +156,17 @@
 
 (define (make-text s len)
   (inst-leaf-doc make-text* #:fail #f #t #t (not (zero? len)) #:args 0 s len))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; special consists of:
+;; - s :: any/c
+;; - len :: natural?
+;; where len is the length of s
+(struct :special doc (s len) #:transparent #:constructor-name make-special*)
+
+(define (special s len)
+  (inst-leaf-doc make-special* #:fail #f #t #t (not (zero? len)) #:args 0 s len))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

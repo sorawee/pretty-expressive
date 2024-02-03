@@ -8,6 +8,7 @@
          "addons.rkt")
 
 (provide pretty-format/factory/info
+         pretty-print/factory/info
 
          pretty-print/factory
          pretty-format/factory
@@ -18,6 +19,7 @@
          current-page-width
          current-computation-width
          current-offset
+         current-special
 
          default-cost-factory
 
@@ -30,20 +32,42 @@
 (define current-page-width (make-parameter 80))
 (define current-computation-width (make-parameter #f))
 (define current-offset (make-parameter 0))
+(define current-special (make-parameter write-special))
 
-(define (pretty-format/factory/info d F #:offset [offset (current-offset)])
+(define (pretty-format/factory/info d F
+                                   #:offset [offset (current-offset)]
+                                   #:special [special (current-special)])
+  (define out (open-output-string))
+  (define info
+    (pretty-print/factory/info d F
+                               #:offset offset
+                               #:out out
+                               #:special special))
+  (values (get-output-string out) info))
+
+(define (pretty-print/factory/info d F
+                                   #:offset [offset (current-offset)]
+                                   #:out [out (current-output-port)]
+                                   #:special [special (current-special)])
   (print-layout #:doc d
                 #:factory F
-                #:offset offset))
+                #:offset offset
+                #:out out
+                #:special special))
 
 (define (pretty-format/factory d F #:offset [offset (current-offset)])
-  (info-out (pretty-format/factory/info d F #:offset offset)))
+  (define out (open-output-string))
+  (define info (pretty-print/factory d F
+                                     #:offset offset
+                                     #:out out
+                                     #:special special))
+  (get-output-string out))
 
 (define (pretty-print/factory d F
                               #:offset [offset (current-offset)]
-                              #:out [out (current-output-port)])
-  (display (pretty-format/factory d F #:offset offset)
-           out))
+                              #:out [out (current-output-port)]
+                              #:special [special (current-special)])
+  (void (pretty-print/factory/info d F #:offset offset #:out out #:special special)))
 
 (define (default-cost-factory
          #:page-width [page-width (current-page-width)]
@@ -73,23 +97,30 @@
          d
          #:page-width [page-width (current-page-width)]
          #:computation-width [computation-width (current-computation-width)]
-         #:offset [offset (current-offset)])
-  (pretty-format/factory d
-                         (default-cost-factory
-                          #:page-width page-width
-                          #:computation-width computation-width)
-                         #:offset offset))
+         #:offset [offset (current-offset)]
+         #:special [special (current-special)])
+  (define out (open-output-string))
+  (pretty-print d
+                #:page-width page-width
+                #:computation-width computation-width
+                #:offset offset
+                #:out out
+                #:special special)
+  (get-output-string out))
 
 (define (pretty-print d
                       #:page-width [page-width (current-page-width)]
                       #:computation-width [computation-width (current-computation-width)]
                       #:offset [offset (current-offset)]
-                      #:out [out (current-output-port)])
-  (display (pretty-format d
+                      #:out [out (current-output-port)]
+                      #:special [special (current-special)])
+  (pretty-print/factory d
+                        (default-cost-factory
                           #:page-width page-width
-                          #:computation-width computation-width
-                          #:offset offset)
-           out))
+                          #:computation-width computation-width)
+                        #:offset offset
+                        #:out out
+                        #:special special))
 
 (module+ test
   (require racket/match

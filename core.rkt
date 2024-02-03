@@ -17,14 +17,16 @@
          "promise.rkt"
          (submod "doc.rkt" private))
 
-(struct info (out tainted? cost) #:transparent)
+(define current-print-special (make-parameter #f))
+
+(struct info (tainted? cost) #:transparent)
 
 (struct cost-factory (cost<=? cost+ cost-text cost-nl limit))
 
 ;; A measure consists of
 ;; - last length :: natural?
 ;; - cost :: tau
-;; - token function :: (listof string) -> (listof string?)
+;; - tok :: output-port? -> void?
 (struct measure (last cost tok) #:transparent)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -93,7 +95,10 @@
   (define (concat-measure m1 m2)
     (match-define (measure _ cost1 tok1) m1)
     (match-define (measure last2 cost2 tok2) m2)
-    (measure last2 (cost+ cost1 cost2) (λ (tks) (tok1 (tok2 tks)))))
+    (measure last2 (cost+ cost1 cost2)
+             (λ (out)
+               (tok1 out)
+               (tok2 out))))
 
   (define limit+1 (add1 limit))
 
@@ -128,16 +133,19 @@
             ;; Per Note 1, no need to check for failure
             (list (measure (+ c len)
                            (cost-text c len)
-                           (λ (tks)
+                           (λ (out)
                              (cond
-                               [(string? s) (cons s tks)]
-                               [else (append (flatten s) tks)]))))]
+                               [(string? s) (display s out)]
+                               [else (for ([s (in-list (flatten s))])
+                                       (display s out))]))))]
 
            [(struct* :newline ())
             ;; Per Note 1, no need to check for failure
             (list (measure i
                            (cost-nl i)
-                           (λ (tks) (list* "\n" (make-string i #\space) tks))))]
+                           (λ (out)
+                             (display "\n" out)
+                             (display (make-string i #\space) out))))]
 
            [(struct* :concat ([a a] [b b]))
             ;; analyze-left-ms :: bool? -> measure-set/c
@@ -221,6 +229,12 @@
             ;; Per Note 1, no need to check for failure
             (merge (resolve d c i beg-full? #f) (resolve d c i beg-full? #t))]
 
+           [(struct* :special ([s s] [len len]))
+            ;; Per Note 1, no need to check for failure
+            (list (measure (+ c len)
+                           (cost-text c len)
+                           (λ (out) ((current-print-special) s out))))]
+
            ;; This is essentially a dead code.
            ;; Partial evaluation should have removed most fails away already,
            ;; except when the document is truly failing.
@@ -275,11 +289,12 @@
     [(list m) (values m tainted?)]))
 
 ;; print-layout :: #:doc doc? -> #:factory cost-factory? -> info?
-(define (print-layout #:doc d #:factory F #:offset offset)
-  (define-values (m tainted?) (print d F #:offset offset))
-  (info (string-append* ((measure-tok m) '()))
-        tainted?
-        (measure-cost m)))
+(define (print-layout #:doc d #:factory F #:offset offset #:out out
+                      #:special special)
+  (parameterize ([current-print-special special])
+    (define-values (m tainted?) (print d F #:offset offset))
+    ((measure-tok m) out)
+    (info tainted? (measure-cost m))))
 
 ;; Lemma 1: the failure of resolving is independent of c and i.
 ;;          I.e., given d, c1, c2, i1, i2, beg-full?, and end-full?:

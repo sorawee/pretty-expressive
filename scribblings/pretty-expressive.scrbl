@@ -154,7 +154,8 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
                        [#:page-width page-width natural? (current-page-width)]
                        [#:computation-width computation-width (or/c #f natural?) (current-computation-width)]
                        [#:offset offset natural? (current-offset)]
-                       [#:out out output-port? (current-output-port)])
+                       [#:out out output-port? (current-output-port)]
+                       [#:special special (-> any/c output-port? void?) (current-special)])
          void?]{
   Pretty prints the @tech{doc} @racket[d] to the output port @racket[out]
   with a maximum page width of @racket[page-width] and offset @racket[offset].
@@ -183,6 +184,8 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
   The @racket[offset] argument is particularly helpful when there is already some preceding text printed to the screen,
   and we wish to pretty-printing after that.
 
+  The @racket[special] argument is used for printing @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{special} results.
+
   @examples[#:eval evaluator
     (define prefix-s "values are: ")
     (begin
@@ -198,16 +201,18 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
 @defproc[(pretty-format [d doc?]
                         [#:page-width page-width natural? (current-page-width)]
                         [#:computation-width computation-width (or/c #f natural?) (current-computation-width)]
-                        [#:offset offset natural? (current-offset)])
+                        [#:offset offset natural? (current-offset)]
+                        [#:special special (-> any/c output-port? void?) (current-special)])
          string?]{
-  Like @racket[pretty-print], but outputs a string instead.
+  Like @racket[pretty-print], but outputs a string instead of writing to the output port.
 }
 
 
 @defproc[(pretty-print/factory [d doc?]
                                [F cost-factory?]
                                [#:offset offset natural? (current-offset)]
-                               [#:out out output-port? (current-output-port)])
+                               [#:out out output-port? (current-output-port)]
+                               [#:special special (-> any/c output-port? void?) (current-special)])
          void?]{
   Like @racket[pretty-print], but uses a cost factory @racket[F] instead.
   See @secref{Cost_factory} for more details.
@@ -215,24 +220,36 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
 
 @defproc[(pretty-format/factory [d doc?]
                                 [F cost-factory?]
-                                [#:offset offset natural? (current-offset)])
+                                [#:offset offset natural? (current-offset)]
+                                [#:special special (-> any/c output-port? void?) (current-special)])
          string?]{
   Like @racket[pretty-print/factory], but outputs a string instead.
 }
 
-@defproc[(pretty-format/factory/info [d doc?]
-                                     [F cost-factory?]
-                                     [#:offset offset natural? (current-offset)])
+@defproc[(pretty-print/factory/info [d doc?]
+                                    [F cost-factory?]
+                                    [#:offset offset natural? (current-offset)]
+                                    [#:out out output-port? (current-output-port)]
+                                    [#:special special (-> any/c output-port? void?) (current-special)])
          info?]{
   Like @racket[pretty-print/factory], but outputs an @racket[info] structure
   which contains debugging information.
 }
 
-@defstruct[info ([out string?]
-                 [tainted? boolean?]
+@defproc[(pretty-format/factory/info [d doc?]
+                                     [F cost-factory?]
+                                     [#:offset offset natural? (current-offset)]
+                                     [#:special special (-> any/c output-port? void?) (current-special)])
+         (values string? info?)]{
+  Like @racket[pretty-print/factory/info], but additionally outputs a string.
+}
+
+@defstruct[info ([tainted? boolean?]
                  [cost any/c])]{
-  A structure type that contains both the output of pretty printing and debugging information:
+  A structure type that contains debugging information:
   taintedness (whether the computation width limit was exceeded) and cost of the output layout.
+
+  @history[#:changed "1.1" @elem{Removed the @racket[out] component.}]
 }
 
 @subsection{Constructing Documents}
@@ -245,6 +262,16 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
   @examples[#:eval evaluator
     (pretty-print (text "Portal"))
   ]
+}
+
+@defproc[(special [s any/c] [len natural?]) doc?]{
+  Constructs a @tech{doc} containing the value @racket[s]
+  with an estimated width of @racket[len] characters.
+  The value @racket[s] will be printed with the @racket[special]
+  argument of @racket[pretty-print] and friends.
+
+  DrRacket, in particular, sets up its @racket[current-output-port] so that
+  one can prints an image as a special value.
 }
 
 @defproc[(newline [s (or/c #f string?)]) doc?]{
@@ -501,6 +528,10 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
   A parameter that determines the column offset for subsequent lines.
 }
 
+@defparam[current-special special (-> any/c output-port? void?) #:value write-special]{
+  A parameter that determines the printing function for @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{special} results.
+}
+
 @subsection{Match Expanders}
 
 Internally, a @tech{doc} is either a @racket[:text], @racket[:newline], @racket[:concat], @racket[:alternatives], @racket[:align], @racket[:reset], @racket[:nest], @racket[:full], @racket[:fail], or @racket[:cost].
@@ -509,8 +540,12 @@ The match expanders are illegal outside of the pattern position of the @racket[m
 Keep in mind that this list is unstable and could change across versions of the library.
 
 
-@defform[(:text s)]{
-  A match expander that recognizes text @racket[s] of type @racket[string?].
+@defform[(:text s len)]{
+  A match expander that recognizes text @racket[s] of type @racket[(treeof string?)] whose length is @racket[len].
+}
+
+@defform[(:special s len)]{
+  A match expander that recognizes a special result @racket[s] whose length is @racket[len].
 }
 
 @defform[(:newline s)]{

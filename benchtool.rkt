@@ -58,7 +58,7 @@
 
 ;; do-bench :: doc? -> void?
 (define (do-bench d)
-  (match-define-values [(list (info out tainted? cost)) _ duration _]
+  (match-define-values [(list out (info tainted? cost)) _ duration _]
     (time-apply (λ () (pretty-format/factory/info d (default-cost-factory))) '()))
   (match (current-out)
     [#f (void)]
