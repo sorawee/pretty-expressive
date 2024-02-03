@@ -264,7 +264,7 @@
          [else (core)]))))
 
   (define result
-    (merge (resolve d offset offset #f #f) (resolve d offset offset #f #t)))
+    (merge (resolve d offset 0 #f #f) (resolve d offset 0 #f #t)))
 
   (define tainted? (promise? result))
 

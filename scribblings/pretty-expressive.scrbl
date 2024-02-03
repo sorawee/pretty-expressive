@@ -190,11 +190,11 @@ both @tech{doc} construction and @racket[pretty-print] would be inefficient.
     (define prefix-s "values are: ")
     (begin
       (display prefix-s)
-      (pretty-print doc #:offset (string-length prefix-s)))
+      (pretty-print (align doc) #:offset (string-length prefix-s)))
     (code:comment @#,elem{Without @racket[#:offset], the output will not be correctly aligned.})
     (begin
       (display prefix-s)
-      (pretty-print doc))
+      (pretty-print (align doc)))
   ]
 }
 
