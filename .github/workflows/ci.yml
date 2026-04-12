@@ -16,7 +16,7 @@ jobs:
           variant: "CS"
           version: ${{ matrix.racket-version }}
       - name: Installing pretty-expressive and its dependencies
-        run: raco pkg install --no-docs --auto --name pretty-expressive
+        run: raco pkg install --auto pretty-expressive-lib/ pretty-expressive/
       - name: Compiling pretty-expressive and building its docs
         run: raco setup --check-pkg-deps --unused-pkg-deps pretty-expressive
       - name: Testing pretty-expressive
