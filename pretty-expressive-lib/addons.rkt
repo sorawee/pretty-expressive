@@ -113,9 +113,9 @@
     (hash-ref! flatten-map d
                (λ ()
                  (match d
-                   [(struct* :align ([d d])) (doc-process loop d)]
-                   [(struct* :reset ([d d])) (doc-process loop d)]
-                   [(struct* :nest ([d d])) (doc-process loop d)]
+                   [(struct* :align ([d d])) (loop d)]
+                   [(struct* :reset ([d d])) (loop d)]
+                   [(struct* :nest ([d d])) (loop d)]
                    [(struct* :newline ([s s]))
                     (cond
                       [s (text s)]

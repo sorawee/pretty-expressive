@@ -141,4 +141,10 @@ EOF
                 "something")
 
   (check-exn #px"the document fails to print"
-             (λ () (pretty-format fail))))
+             (λ () (pretty-format fail)))
+
+  ;; Issue #7
+  (check-equal? (pretty-format (flatten (align nl))) " ")
+  (check-equal? (pretty-format (flatten (align (align nl)))) " ")
+  (check-exn #px"the document fails to print"
+             (λ () (pretty-format (flatten (align hard-nl))))))
