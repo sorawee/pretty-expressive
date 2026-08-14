@@ -28,7 +28,7 @@
 This library implements a pretty expressive printer, following the algorithm presented in @citet[Porncharoenwase23:pretty-expressive].
 The pretty printer is expressive, provably optimal, and practically efficient.
 It is similar to another library @racketmodname[pprint #:indirect], but that library employs a greedy algorithm.
-As a result, @racketmodname[pretty-expressive], when compared to PPrint, is more expressive and optimal, at the cost of being less efficient.
+As a result, @racketmodname[pretty-expressive], when compared to PPrint, is more expressive and optimal, at the cost of being less performant.
 
 This documentation and its structure are shamelessly copied/adapted from the PPrint library.
 
@@ -43,7 +43,7 @@ instructions: things like text, newlines, indentation, and styling. It can also
 contain @deftech{choices} (@racket[alt]) between two or more alternatives, resulting
 in many possible layouts for a document. The pretty printer's job is to pick
 the optimal layout from among all of the choices. E.g., the one that minimizes
-the number of lines which not exceeding the page width limit.
+the number of lines while not exceeding the page width limit.
 
 Here's a simple example of pretty printing a document encoding a fragment of code.
 
