@@ -9,7 +9,6 @@
 (define deps
   '("base"))
 (define pkg-authors '(sorawee))
-(define license '(Apache-2.0 OR MIT))
 
 ;; collection info
 
